@@ -94,3 +94,17 @@ psql postgres < reset.sql
 - **Parameters:**
     - `account_id`: string (path parameter)
 
+### Get All Accounts
+
+- **URL:** `/get-all-accounts/{customer_id}`
+- **Description:** Get all accounts for a customer
+- **Parameters:**
+    - `customer_id`: string (path parameter)
+
+### Get Customer Data
+
+- **URL:** `/get-customer-data/{customer_id}`
+- **Description:** Get customer data by ID
+- **Parameters:**
+    - `customer_id`: string (path parameter)
+

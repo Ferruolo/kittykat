@@ -261,7 +261,7 @@ async def create_transaction(input_data: dict) -> Transaction:
         raise HTTPException(status_code=500, detail="Failed to execute transaction")
 
 
-@app.get("/get-transactions/{account_id}")
+@app.get("/get-transactions/{account_id:str}")
 async def get_transactions(account_id: str) -> Dict[str, List[Transaction]]:
     try:
         with get_db_connection() as conn:
@@ -293,7 +293,7 @@ async def get_transactions(account_id: str) -> Dict[str, List[Transaction]]:
         raise HTTPException(status_code=500, detail="Failed to get transactions")
 
 
-@app.get("/get-all-accounts/{customer_id}")
+@app.get("/get-all-accounts/{customer_id:str}")
 async def get_all_accounts(customer_id: str) -> Dict[str, List[Account]]:
     try:
         with get_db_connection() as conn:
@@ -322,7 +322,7 @@ async def get_all_accounts(customer_id: str) -> Dict[str, List[Account]]:
         raise HTTPException(status_code=500, detail="Failed to get all accounts")
 
 
-@app.get("/get-customer-data/{customer_id}")
+@app.get("/get-customer-data/{customer_id:str}")
 async def get_customer_data(customer_id: str):
     try:
         with get_db_connection() as conn:
