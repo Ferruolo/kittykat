@@ -43,7 +43,8 @@ async def create_customer(data: dict) -> Customer:
                     )
                 else:
                     raise HTTPException(status_code=400, detail="Failed to create customer")
-
+    except HTTPException as e:
+        raise e
     except psycopg2.errors.UniqueViolation:
         raise HTTPException(status_code=400, detail="Customer with same email already exists")
     except Exception as e:
@@ -81,6 +82,8 @@ async def create_account(data: dict) -> Account:
                     customer_id=result[2],
                     created_at=result[3]
                 )
+    except HTTPException as e:
+        raise e
     except Exception as e:
         print(e)
         raise HTTPException(status_code=500, detail="Failed to create account")
@@ -100,6 +103,8 @@ async def get_customer_balance(customer_id: str):
                 )
 
                 return { 'customer_id': customer_id, 'balance': cursor.fetchone()[0]}
+    except HTTPException as e:
+        raise e
     except Exception as e:
         print(e)
         raise HTTPException(status_code=500, detail="Failed to get customer balance")
@@ -120,6 +125,8 @@ async def get_account_balance(account_id: str):
                     'account_id': account_id,
                     'balance': cursor.fetchone()[0]
                 }
+   except HTTPException as e:
+       raise e
    except Exception as e:
        print(e)
        raise HTTPException(status_code=500, detail="Failed to get account balance")
@@ -196,6 +203,8 @@ async def get_transactions(account_id: str) -> Dict[str, List[Transaction]]:
                     )
                     formatted_transactions.append(transaction_data)
                 return { 'transactions': formatted_transactions }
+    except HTTPException as e:
+        raise e
     except Exception as e:
         print(e)
         raise HTTPException(status_code=500, detail="Failed to get transactions")
