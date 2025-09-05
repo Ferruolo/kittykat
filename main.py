@@ -322,7 +322,7 @@ async def get_all_accounts(customer_id: str) -> Dict[str, List[Account]]:
         raise HTTPException(status_code=500, detail="Failed to get all accounts")
 
 
-@app.get("/get-customer-data/customer_id/{customer_id}")
+@app.get("/get-customer-data/{customer_id}")
 async def get_customer_data(customer_id: str):
     try:
         with get_db_connection() as conn:
