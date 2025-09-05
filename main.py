@@ -90,23 +90,29 @@ async def create_customer(data: dict) -> Customer:
     try:
         with get_db_connection() as conn:
             with conn.cursor() as cursor:
-                cursor.execute(
-                    "INSERT INTO customers (customer_first, customer_last, customer_email) VALUES (%s, %s, %s) RETURNING *",
-                    (customer.first_name, customer.last_name, customer.email)
-                )
-                result = cursor.fetchone()
-                conn.commit()
-
-                if result:
-                    return Customer(
-                        id=result[0],
-                        customer_first=result[1],
-                        customer_last=result[2],
-                        customer_email=result[3],
-                        created_at=result[4]
+                try:
+                    cursor.execute(
+                        "INSERT INTO customers (customer_first, customer_last, customer_email) VALUES (%s, %s, %s) RETURNING *",
+                        (customer.first_name, customer.last_name, customer.email)
                     )
-                else:
-                    raise HTTPException(status_code=400, detail="Failed to create customer")
+                    result = cursor.fetchone()
+                    conn.commit()
+
+                    if result:
+                        return Customer(
+                            id=result[0],
+                            customer_first=result[1],
+                            customer_last=result[2],
+                            customer_email=result[3],
+                            created_at=result[4]
+                        )
+                    else:
+                        conn.rollback()
+                        raise HTTPException(status_code=400, detail="Failed to create customer")
+                except Exception as e:
+                    conn.rollback()
+                    print(e)
+                    raise HTTPException(status_code=500, detail="Failed to create customer")
     except HTTPException as e:
         raise e
     except psycopg2.errors.UniqueViolation:
@@ -131,21 +137,26 @@ async def create_account(data: dict) -> Account:
     try:
         with get_db_connection() as conn:
             with conn.cursor() as cursor:
-                account_exists = check_if_customer_exists_given_id(account_data.customer_id, cursor)
-                if not account_exists:
-                    raise HTTPException(status_code=400, detail="Customer does not exist")
-                cursor.execute(
-                   "INSERT INTO accounts (customer_id, balance) VALUES (%s, %s) returning *",
-                   (account_data.customer_id, account_data.balance)
-                )
-                result = cursor.fetchone()
-                conn.commit()
-                return Account(
-                    id=result[0],
-                    balance=result[1],
-                    customer_id=result[2],
-                    created_at=result[3]
-                )
+                try:
+                    account_exists = check_if_customer_exists_given_id(account_data.customer_id, cursor)
+                    if not account_exists:
+                        raise HTTPException(status_code=400, detail="Customer does not exist")
+                    cursor.execute(
+                        "INSERT INTO accounts (customer_id, balance) VALUES (%s, %s) returning *",
+                        (account_data.customer_id, account_data.balance)
+                    )
+                    result = cursor.fetchone()
+                    conn.commit()
+                    return Account(
+                        id=result[0],
+                        balance=result[1],
+                        customer_id=result[2],
+                        created_at=result[3]
+                    )
+                except Exception as e:
+                    conn.rollback()
+                    print(e)
+                    raise HTTPException(status_code=500, detail="Failed to create account")
     except HTTPException as e:
         raise e
     except Exception as e:
@@ -272,3 +283,32 @@ async def get_transactions(account_id: str) -> Dict[str, List[Transaction]]:
     except Exception as e:
         print(e)
         raise HTTPException(status_code=500, detail="Failed to get transactions")
+
+
+@app.get("/get-all-accounts/{customer_id}")
+async def get_all_accounts(customer_id: str) -> Dict[str, List[Account]]:
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cursor:
+                if not check_if_customer_exists_given_id(customer_id, cursor):
+                    raise HTTPException(status_code=400, detail="Customer does not exist")
+                cursor.execute(
+                    "SELECT * FROM accounts WHERE customer_id = %s ORDER BY created_at DESC",
+                    (customer_id,)
+                )
+                accounts = cursor.fetchall()
+                formatted_accounts = []
+                for account in accounts:
+                    account_data = Account(
+                        id=account[0],
+                        balance=account[1],
+                        customer_id=account[2],
+                        created_at=account[3]
+                    )
+                    formatted_accounts.append(account_data)
+                return { 'accounts': formatted_accounts }
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        print(e)
+        raise HTTPException(status_code=500, detail="Failed to get all accounts")
