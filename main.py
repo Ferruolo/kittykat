@@ -13,7 +13,71 @@ app = FastAPI()
 
 @app.get("/")
 async def read_root():
-    return { 'docs': ''}
+    return  """
+        <!DOCTYPE html>
+        <html>
+            <head>
+                <title>API Docs</title>
+            </head>
+            <body>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Endpoint</th>
+                            <th>Description</th>
+                            <th>Parameters</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><a href="/create-customer">/create-customer</a></td>
+                            <td>Create a new customer</td> 
+                            <td> {
+                                'first_name': str,
+                                'last_name': str,
+                                'email': str
+                                }
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><a href="/create-account">/create-account</a></td>
+                            <td>Create a new account for customer</td>
+                            <td> {
+                                'balance': float,
+                                'customer_id': str
+                                }
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><a href="/get-customer-balance/{customer_id}">/get-customer-balance/{customer_id}</a></td>
+                            <td>Get total balance for customer</td>
+                            <td>customer_id: str (path parameter)</td>
+                        </tr>
+                        <tr>
+                            <td><a href="/get-account-balance/{account_id}">/get-account-balance/{account_id}</a></td>
+                            <td>Get balance for specific account</td>
+                            <td>account_id: str (path parameter)</td>
+                        </tr>
+                        <tr>
+                            <td><a href="/create-transaction">/create-transaction</a></td>
+                            <td>Create a new transaction between accounts</td>
+                            <td> {
+                                'sender_account_id': str,
+                                'receiver_account_id': str,
+                                'amount': float
+                                }
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><a href="/get-transactions/{account_id}">/get-transactions/{account_id}</a></td>
+                            <td>Get all transactions for an account</td>
+                            <td>account_id: str (path parameter)</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </body>
+        </html>
+    """
 
 class CustomerParams(BaseModel):
     first_name: str
