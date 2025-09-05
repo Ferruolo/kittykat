@@ -215,43 +215,51 @@ class TransactionParams(BaseModel):
 @app.post("/create-transaction")
 async def create_transaction(input_data: dict) -> Transaction:
     transaction_data = validate_input(input_data, TransactionParams)
-    with get_db_connection() as conn:
-        with conn.cursor() as cursor:
-            try:
-                # First we need to check if the sender account has enough balance and take the money out
-                # This needs to happen in one atomic transaction, or else the sender account could have a negative balance
-                cursor.execute(
-                    'update accounts set balance = balance - %s where id = %s and balance >= %s returning *',
-                    (transaction_data.amount, transaction_data.sender_account_id, transaction_data.amount)
-                )
-                deductFromSenderResponse = cursor.fetchone()
-                if deductFromSenderResponse is None:
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cursor:
+                try:
+                    # First we need to check if the sender account has enough balance and take the money out
+                    # This needs to happen in one atomic transaction, or else the sender account could have a negative balance
+                    cursor.execute(
+                        'update accounts set balance = balance - %s where id = %s and balance >= %s returning *',
+                        (transaction_data.amount, transaction_data.sender_account_id, transaction_data.amount)
+                    )
+                    deductFromSenderResponse = cursor.fetchone()
+                    if deductFromSenderResponse is None:
+                        conn.rollback()
+                        raise HTTPException(status_code=400, detail="Insufficient funds")
+                    # We can now safely transfer the money to the receiver
+                    cursor.execute(
+                        'update accounts set balance = balance + %s where id = %s returning *',
+                        (transaction_data.amount, transaction_data.receiver_account_id)
+                    )
+                    cursor.execute(
+                        'insert into transactions (sender_account_id, receiver_account_id, amount) values (%s, %s, %s) returning *',
+                        (transaction_data.sender_account_id, transaction_data.receiver_account_id,
+                         transaction_data.amount)
+                    )
+                    result = cursor.fetchone()
+                    conn.commit()
+                    return Transaction(
+                        id=result[0],
+                        amount=result[1],
+                        sender_account_id=result[2],
+                        receiver_account_id=result[3],
+                        created_at=result[4]
+                    )
+                except HTTPException as e:
+                    raise e
+                except Exception as e:
                     conn.rollback()
-                    raise HTTPException(status_code=400, detail="Insufficient funds")
-                # We can now safely transfer the money to the receiver
-                cursor.execute(
-                    'update accounts set balance = balance + %s where id = %s returning *',
-                    (transaction_data.amount, transaction_data.receiver_account_id)
-                )
-                cursor.execute(
-                    'insert into transactions (sender_account_id, receiver_account_id, amount) values (%s, %s, %s) returning *',
-                    (transaction_data.sender_account_id, transaction_data.receiver_account_id, transaction_data.amount)
-                )
-                result = cursor.fetchone()
-                conn.commit()
-                return Transaction(
-                    id=result[0],
-                    amount=result[1],
-                    sender_account_id=result[2],
-                    receiver_account_id=result[3],
-                    created_at=result[4]
-                )
-            except HTTPException as e:
-                raise e
-            except Exception as e:
-                conn.rollback()
-                print(e)
-                raise HTTPException(status_code=500, detail="Failed to execute transaction")
+                    print(e)
+                    raise HTTPException(status_code=500, detail="Failed to execute transaction")
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        print(e)
+        raise HTTPException(status_code=500, detail="Failed to execute transaction")
+
 
 @app.get("/get-transactions/{account_id}")
 async def get_transactions(account_id: str) -> Dict[str, List[Transaction]]:
