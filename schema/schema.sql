@@ -13,5 +13,15 @@ create table accounts (
 )
 
 alter table customers add constraint customer_email_unique unique (customer_email);
+alter table customers add column created_at timestamp not null default (now() at time zone 'utc');
+alter table accounts add column created_at timestamp not null default (now() at time zone 'utc');
 
-drop table accounts;
+
+
+create table transaction (
+    id uuid primary key default gen_random_uuid(),
+    amount numeric not null,
+    sender_account_id uuid references accounts(id) not null,
+    receiver_account_id uuid references accounts(id) not null,
+    created_at timestamp not null default (now() at time zone 'utc')
+)
