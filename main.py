@@ -320,3 +320,28 @@ async def get_all_accounts(customer_id: str) -> Dict[str, List[Account]]:
     except Exception as e:
         print(e)
         raise HTTPException(status_code=500, detail="Failed to get all accounts")
+
+
+@app.get("/get-customer-data/customer_id/{customer_id}")
+async def get_customer_data(customer_id: str):
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cursor:
+                if not check_if_customer_exists_given_id(customer_id, cursor):
+                    raise HTTPException(status_code=400, detail="Customer does not exist")
+                cursor.execute(
+                    "SELECT * FROM customers WHERE id = %s",
+                    (customer_id,)
+                )
+                customer = cursor.fetchone()
+                return Customer(
+                    id=customer[0],
+                    customer_first=customer[1],
+                    customer_last=customer[2],
+                    customer_email=customer[3],
+                    created_at=customer[4]
+                )
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        print(e)
