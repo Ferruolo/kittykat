@@ -1,16 +1,35 @@
-# API Documentation
+# Banking API
+
+A FastAPI-based banking system that manages customers, accounts, and transactions with PostgreSQL database backend.
+
+## Setup
+
+1. Create and activate virtual environment:
+```bash
+python -m venv meowenv
+source meowenv/bin/activate 
+```
+
+2. Install dependencies:
+```bash
+pip install fastapi uvicorn psycopg2-binary pydantic
+```
+
+3. Set up the database:
+```bash
+# Create database and run schema
+psql postgres < schema/schema.sql
+```
+
 ## How to run
 ```bash
-
-
-uvicorn main:app --host 0.0.0.0 --port 8000 --reload    
-
+uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
 ## How to test
 ```bash
 python tests.py
-# to reset after
+# to reset database after testing
 psql postgres < reset.sql
 ```
 
@@ -74,3 +93,4 @@ psql postgres < reset.sql
 - **Description:** Get all transactions for an account
 - **Parameters:**
     - `account_id`: string (path parameter)
+
